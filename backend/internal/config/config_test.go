@@ -97,12 +97,22 @@ func TestLoadRedisUsernameFromEnvironment(t *testing.T) {
 	require.Equal(t, "app-user", cfg.Redis.Username)
 }
 
+func TestLoadServerShutdownTimeoutFromEnv(t *testing.T) {
+	resetViperWithJWTSecret(t)
+	t.Setenv("SERVER_SHUTDOWN_TIMEOUT", "570")
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	require.Equal(t, 570, cfg.Server.ShutdownTimeout)
+}
+
 func TestLoadHTTPIngressSafetyDefaults(t *testing.T) {
 	resetViperWithJWTSecret(t)
 	cfg, err := Load()
 	require.NoError(t, err)
 	require.Equal(t, 10, cfg.Server.ReadHeaderTimeout)
 	require.Equal(t, 64*1024, cfg.Server.MaxHeaderBytes)
+	require.Equal(t, 5, cfg.Server.ShutdownTimeout)
 	require.Empty(t, cfg.Server.TrustedProxies)
 	require.False(t, cfg.Server.TrustedProxiesConfigured)
 	require.True(t, cfg.TrustForwardedIPForAPIKeyACL())
@@ -1587,6 +1597,11 @@ func TestValidateConfigErrors(t *testing.T) {
 			name:    "server read header timeout",
 			mutate:  func(c *Config) { c.Server.ReadHeaderTimeout = 0 },
 			wantErr: "server.read_header_timeout",
+		},
+		{
+			name:    "server shutdown timeout",
+			mutate:  func(c *Config) { c.Server.ShutdownTimeout = 0 },
+			wantErr: "server.shutdown_timeout",
 		},
 		{
 			name:    "server max header bytes too small",
